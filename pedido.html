@@ -183,6 +183,21 @@
             border: 1px solid #f5c6cb;
         }
 
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -249,9 +264,13 @@
                     
                     <div class="file-upload-container">
                         <label for="fileUpload" style="cursor: pointer;">
-                            <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: var(--primary-color);"></i>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
                             <p>Arrastra archivos aquí o haz clic para seleccionar</p>
-                            <p><small>Formatos aceptados: .jpg, .png, .pdf, .ai, .psd</small></p>
+                            <p><small>Formatos aceptados: .jpg, .png, .pdf, .ai, .psd (Máx. 5MB cada uno)</small></p>
                         </label>
                         <input type="file" id="fileUpload" multiple style="display: none;">
                     </div>
@@ -269,7 +288,9 @@
                 </div>
                 
                 <div class="buttons">
-                    <button type="button" id="sendBtn">Enviar Solicitud</button>
+                    <button type="button" id="sendBtn">
+                        <span id="sendBtnText">Enviar Solicitud</span>
+                    </button>
                     <button type="button" id="generateBtn">Generar PDF</button>
                     <button type="reset" class="secondary-btn">Limpiar</button>
                 </div>
@@ -283,9 +304,9 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
     <script>
-        // Inicializar EmailJS con tu User ID
+        // Inicializar EmailJS con tu User ID (Public Key)
         document.addEventListener('DOMContentLoaded', function() {
-            emailjs.init('service_0pz5qxe'); // Reemplaza con tu User ID de EmailJS
+            emailjs.init('2KHnZovj2zxwhVlkU'); // 🔑 Reemplaza con tu User ID de EmailJS
             
             // Configurar fecha actual
             const today = new Date().toISOString().split('T')[0];
@@ -294,17 +315,19 @@
             // Variables para almacenar archivos
             let uploadedFiles = [];
             
-            // Manejar selección de archivos
+            // Elementos del DOM
             const fileUpload = document.getElementById('fileUpload');
             const fileList = document.getElementById('fileList');
+            const sendBtn = document.getElementById('sendBtn');
+            const sendBtnText = document.getElementById('sendBtnText');
+            const dropArea = document.querySelector('.file-upload-container');
             
+            // Manejar selección de archivos
             fileUpload.addEventListener('change', function(e) {
                 handleFiles(e.target.files);
             });
             
             // Manejar drag and drop
-            const dropArea = document.querySelector('.file-upload-container');
-            
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                 dropArea.addEventListener(eventName, preventDefaults, false);
             });
@@ -323,13 +346,13 @@
             });
             
             function highlight() {
-                dropArea.style.borderColor = var(--primary-color);
+                dropArea.style.borderColor = 'var(--primary-color)';
                 dropArea.style.backgroundColor = 'rgba(0, 86, 179, 0.1)';
             }
             
             function unhighlight() {
                 dropArea.style.borderColor = '#ccc';
-                dropArea.style.backgroundColor = var(--white);
+                dropArea.style.backgroundColor = 'var(--white)';
             }
             
             dropArea.addEventListener('drop', function(e) {
@@ -342,22 +365,24 @@
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
                     
-                    // Validar tipo de archivo
-                    const validTypes = ['image/jpeg', 'image/png', 'application/pdf', 'application/postscript', 'image/vnd.adobe.photoshop'];
-                    if (!validTypes.includes(file.type)) {
-                        showStatusMessage('Tipo de archivo no válido: ' + file.type, 'error');
+                    // Validar extensión del archivo
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    const validExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'ai', 'psd'];
+                    
+                    if (!validExtensions.includes(fileExtension)) {
+                        showStatusMessage(`Tipo de archivo no válido: .${fileExtension}`, 'error');
                         continue;
                     }
                     
                     // Validar tamaño (max 5MB)
                     if (file.size > 5 * 1024 * 1024) {
-                        showStatusMessage('Archivo demasiado grande: ' + file.name, 'error');
+                        showStatusMessage(`Archivo demasiado grande (${formatFileSize(file.size)}): ${file.name}`, 'error');
                         continue;
                     }
                     
                     uploadedFiles.push(file);
-                    updateFileList();
                 }
+                updateFileList();
             }
             
             function updateFileList() {
@@ -399,12 +424,12 @@
             }
             
             // Enviar formulario por correo
-            const sendBtn = document.getElementById('sendBtn');
             sendBtn.addEventListener('click', function() {
                 if (!validateForm()) return;
                 
+                // Mostrar estado de carga
                 sendBtn.disabled = true;
-                sendBtn.textContent = 'Enviando...';
+                sendBtnText.innerHTML = '<span class="loading"></span> Enviando...';
                 
                 // Crear objeto con los datos del formulario
                 const formData = {
@@ -414,49 +439,29 @@
                     nombreCliente: document.getElementById('nombreCliente').value,
                     nombreDiseno: document.getElementById('nombreDiseno').value,
                     notas: document.getElementById('notas').value,
-                    archivos: uploadedFiles.map(f => f.name).join(', ')
+                    archivos: uploadedFiles.length > 0 ? 
+                        uploadedFiles.map(f => f.name).join(', ') : 
+                        'No se adjuntaron archivos'
                 };
                 
-                // Si hay archivos adjuntos, necesitamos enviarlos como attachments
-                if (uploadedFiles.length > 0) {
-                    // Convertir archivos a base64 para EmailJS
-                    const promises = Array.from(uploadedFiles).map(file => {
-                        return new Promise((resolve) => {
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                resolve({
-                                    filename: file.name,
-                                    content: e.target.result.split(',')[1] // Remover el prefijo data:...
-                                });
-                            };
-                            reader.readAsDataURL(file);
-                        });
-                    });
-                    
-                    Promise.all(promises).then(attachments => {
-                        formData.attachments = attachments;
-                        sendEmail(formData);
-                    });
-                } else {
-                    sendEmail(formData);
-                }
+                sendEmail(formData);
             });
             
             function sendEmail(formData) {
                 // Configura esto con tu Service ID y Template ID de EmailJS
                 const serviceID = 'service_0pz5qxe';
-                const templateID = 'template_2wwwe1o';
+                const templateID = 'template_st96eef';
                 
                 emailjs.send(serviceID, templateID, formData)
                     .then(function(response) {
-                        showStatusMessage('Solicitud enviada correctamente', 'success');
+                        showStatusMessage('✅ Solicitud enviada correctamente', 'success');
                         resetForm();
                     }, function(error) {
-                        showStatusMessage('Error al enviar la solicitud: ' + error.text, 'error');
+                        showStatusMessage(`❌ Error al enviar: ${error.text || 'Por favor intente más tarde'}`, 'error');
                     })
                     .finally(() => {
                         sendBtn.disabled = false;
-                        sendBtn.textContent = 'Enviar Solicitud';
+                        sendBtnText.textContent = 'Enviar Solicitud';
                     });
             }
             
@@ -474,11 +479,6 @@
                     }
                 });
                 
-                if (!isValid) {
-                    showStatusMessage('Por favor complete todos los campos requeridos', 'error');
-                    return false;
-                }
-                
                 // Validar email
                 const email = document.getElementById('email').value;
                 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -487,7 +487,11 @@
                     return false;
                 }
                 
-                return true;
+                if (!isValid) {
+                    showStatusMessage('Por favor complete todos los campos requeridos', 'error');
+                }
+                
+                return isValid;
             }
             
             function showStatusMessage(message, type) {
@@ -505,14 +509,13 @@
                 document.getElementById('requestForm').reset();
                 uploadedFiles = [];
                 updateFileList();
+                document.getElementById('fecha').value = today;
             }
             
             // Generar PDF (funcionalidad básica)
             document.getElementById('generateBtn').addEventListener('click', function() {
                 if (!validateForm()) return;
-                
-                // Aquí iría la lógica para generar el PDF
-                showStatusMessage('Función de generación de PDF en desarrollo', 'success');
+                showStatusMessage('📄 Función de generación de PDF en desarrollo', 'success');
             });
         });
     </script>
