@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMPRESIÓN DTF - Generador de Reportes</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #003366;
+            --accent-color: #ff6600;
+            --light-gray: #f8f9fa;
+            --dark-gray: #343a40;
+            --white: #ffffff;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background-color: var(--white);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .main-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 20px;
+        }
+
+        .logo-container {
+            max-width: 300px;
+            margin: 0 auto 20px;
+        }
+
+        .logo-container img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        h1, h2 {
+            color: var(--secondary-color);
+            margin-top: 0;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 24px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .form-container {
+            margin-bottom: 30px;
+            background-color: var(--light-gray);
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        label {
+            display: inline-block;
+            width: 120px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-right: 10px;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus,
+        select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .buttons {
+            margin-top: 30px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 150px;
+        }
+
+        #generateBtn {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        #generateBtn:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .secondary-btn {
+            background-color: var(--white);
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        .secondary-btn:hover {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        #printBtn {
+            background-color: var(--accent-color);
+            color: var(--white);
+        }
+
+        #printBtn:hover {
+            opacity: 0.9;
+        }
+
+        .report-container {
+            border: 1px solid #ddd;
+            padding: 30px;
+            margin-top: 30px;
+            background-color: var(--white);
+            border-radius: 8px;
+            display: none;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+
+        .report-table th, .report-table td {
+            border: 1px solid #dee2e6;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .report-table th {
+            background-color: var(--primary-color);
+            color: var(--white);
+            width: 25%;
+        }
+
+        .report-table tr:nth-child(even) {
+            background-color: rgba(0, 86, 179, 0.05);
+        }
+
+        #imagePreviewContainer {
+            margin-top: 25px;
+            text-align: center;
+            padding: 15px;
+            border: 1px dashed #ccc;
+            border-radius: 4px;
+            background-color: var(--light-gray);
+        }
+
+        #imagePreviewContainer img {
+            max-width: 100%;
+            max-height: 350px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            margin: 10% auto;
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .close {
+            color: #aaa;
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: var(--dark-gray);
+        }
+
+        #pasteArea {
+            min-height: 200px;
+            border: 2px dashed #ccc;
+            margin: 15px 0;
+            padding: 15px;
+            background-color: var(--light-gray);
+            border-radius: 4px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .form-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            label {
+                width: 100%;
+                margin-bottom: 8px;
+            }
+            
+            input[type="text"],
+            textarea,
+            select {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .report-table th, .report-table td {
+                padding: 8px 10px;
+                font-size: 14px;
+            }
+            
+            .modal-content {
+                margin: 20% auto;
+                width: 95%;
+            }
+        }
+
+        @media print {
+            body {
+                background-color: var(--white);
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                padding: 0;
+                margin: 0;
+                max-width: 100%;
+            }
+            
+            .form-container, button, .main-header {
+                display: none;
+            }
+            
+            .report-container {
+                display: block !important;
+                border: none;
+                padding: 0;
+                margin: 0;
+            }
+            
+            .header {
+                page-break-after: avoid;
+            }
+            
+            .report-table {
+                page-break-inside: avoid;
+            }
+            
+            #imagePreviewContainer {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-header">
+            <div class="logo-container">
+                <img src="https://www.uniformesprofesionales.mx/assets/upfr/logoheader.png" alt="Uniformes Profesionales Logo" onerror="this.src='https://via.placeholder.com/300x100?text=Logo+Uniformes+Profesionales'">
+            </div>
+            <h1>IMPRESIÓN DTF</h1>
+        </div>
+        
+        <div class="form-container">
+            <form id="reportForm">
+                <div class="form-group">
+                    <label for="cliente">CLIENTE:</label>
+                    <input type="text" id="cliente" name="cliente" placeholder="Nombre del cliente">
+                </div>
+                
+                <div class="form-group">
+                    <label for="diseno">DISEÑO:</label>
+                    <input type="text" id="diseno" name="diseno" placeholder="Descripción del diseño">
+                </div>
+                
+                <div class="form-group">
+                    <label for="metraje">METRAJE:</label>
+                    <input type="text" id="metraje" name="metraje" placeholder="Metraje requerido">
+                </div>
+                
+                <div class="form-group">
+                    <label for="orden">ORDEN:</label>
+                    <input type="text" id="orden" name="orden" placeholder="Número de orden">
+                </div>
+                
+                <div class="form-group">
+                    <label for="notas">NOTAS:</label>
+                    <textarea id="notas" name="notas" rows="3" placeholder="Notas adicionales"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="imageUpload">Imagen (opcional):</label>
+                    <input type="file" id="imageUpload" accept="image/*">
+                    <button type="button" id="pasteImageBtn" class="secondary-btn">Pegar imagen</button>
+                </div>
+                
+                <div class="buttons">
+                    <button type="button" id="generateBtn">Generar Reporte</button>
+                    <button type="button" id="printBtn">Imprimir</button>
+                    <button type="reset" class="secondary-btn">Limpiar</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="report-container" id="reportContainer">
+            <div class="header">
+                <div class="logo-container">
+                    <img src="https://www.uniformesprofesionales.mx/assets/upfr/logoheader.png" alt="Uniformes Profesionales Logo" onerror="this.src='https://via.placeholder.com/300x100?text=Logo+Uniformes+Profesionales'">
+                </div>
+                <h2>REPORTE DE IMPRESIÓN DTF</h2>
+            </div>
+            <table class="report-table">
+                <tr>
+                    <th>CLIENTE:</th>
+                    <td id="reportCliente"></td>
+                </tr>
+                <tr>
+                    <th>DISEÑO</th>
+                    <td id="reportDiseno"></td>
+                </tr>
+                <tr>
+                    <th>METRAJE</th>
+                    <td id="reportMetraje"></td>
+                </tr>
+                <tr>
+                    <th>ORDEN</th>
+                    <td id="reportOrden"></td>
+                </tr>
+                <tr>
+                    <th>NOTAS:</th>
+                    <td id="reportNotas"></td>
+                </tr>
+            </table>
+            <div id="imagePreviewContainer"></div>
+        </div>
+    </div>
+    
+    <div id="pasteModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Pegar imagen</h3>
+            <p>Pega (Ctrl+V) una imagen copiada desde otro programa:</p>
+            <div id="pasteArea" contenteditable="true"></div>
+            <div style="text-align: right; margin-top: 15px;">
+                <button id="confirmPasteBtn" class="secondary-btn">Usar imagen</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('reportForm');
+            const generateBtn = document.getElementById('generateBtn');
+            const printBtn = document.getElementById('printBtn');
+            const reportContainer = document.getElementById('reportContainer');
+            const imageUpload = document.getElementById('imageUpload');
+            const pasteImageBtn = document.getElementById('pasteImageBtn');
+            const pasteModal = document.getElementById('pasteModal');
+            const closeModal = document.querySelector('.close');
+            const pasteArea = document.getElementById('pasteArea');
+            const confirmPasteBtn = document.getElementById('confirmPasteBtn');
+            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            
+            // Generar reporte
+            generateBtn.addEventListener('click', function() {
+                document.getElementById('reportCliente').textContent = document.getElementById('cliente').value || "No especificado";
+                document.getElementById('reportDiseno').textContent = document.getElementById('diseno').value || "No especificado";
+                document.getElementById('reportMetraje').textContent = document.getElementById('metraje').value || "No especificado";
+                document.getElementById('reportOrden').textContent = document.getElementById('orden').value || "No especificado";
+                document.getElementById('reportNotas').textContent = document.getElementById('notas').value || "Ninguna";
+                
+                reportContainer.style.display = 'block';
+                window.scrollTo({
+                    top: reportContainer.offsetTop - 20,
+                    behavior: 'smooth'
+                });
+            });
+            
+            // Imprimir reporte
+            printBtn.addEventListener('click', function() {
+                if(reportContainer.style.display === 'block') {
+                    window.print();
+                } else {
+                    alert("Por favor, genere el reporte primero antes de imprimir.");
+                }
+            });
+            
+            // Cargar imagen desde archivo
+            imageUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if(file.size > 5 * 1024 * 1024) {
+                        alert("La imagen es demasiado grande. Por favor seleccione una imagen menor a 5MB.");
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        displayImage(event.target.result);
+                    };
+                    reader.onerror = function() {
+                        alert("Error al cargar la imagen. Por favor intente con otro archivo.");
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Mostrar modal para pegar imagen
+            pasteImageBtn.addEventListener('click', function() {
+                pasteModal.style.display = 'block';
+                pasteArea.innerHTML = '<p style="color: #666; text-align: center;">Pega tu imagen aquí (Ctrl+V)</p>';
+                pasteArea.focus();
+            });
+            
+            // Cerrar modal
+            closeModal.addEventListener('click', function() {
+                pasteModal.style.display = 'none';
+                pasteArea.innerHTML = '';
+            });
+            
+            // Confirmar pegado de imagen
+            confirmPasteBtn.addEventListener('click', function() {
+                const images = pasteArea.getElementsByTagName('img');
+                if (images.length > 0) {
+                    displayImage(images[0].src);
+                    pasteModal.style.display = 'none';
+                    pasteArea.innerHTML = '';
+                } else {
+                    alert("No se detectó ninguna imagen. Por favor pegue una imagen primero.");
+                }
+            });
+            
+            // Pegar imagen desde portapapeles
+            pasteArea.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const items = (e.clipboardData || window.clipboardData).items;
+                
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        const blob = items[i].getAsFile();
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(event) {
+                            pasteArea.innerHTML = '';
+                            const img = document.createElement('img');
+                            img.src = event.target.result;
+                            img.style.maxWidth = '100%';
+                            pasteArea.appendChild(img);
+                        };
+                        
+                        reader.readAsDataURL(blob);
+                        break;
+                    }
+                }
+            });
+            
+            // Mostrar imagen en el reporte
+            function displayImage(imageData) {
+                imagePreviewContainer.innerHTML = '';
+                const img = document.createElement('img');
+                img.src = imageData;
+                img.alt = "Imagen de referencia";
+                imagePreviewContainer.appendChild(img);
+            }
+            
+            // Cerrar modal haciendo clic fuera de él
+            window.addEventListener('click', function(event) {
+                if (event.target === pasteModal) {
+                    pasteModal.style.display = 'none';
+                    pasteArea.innerHTML = '';
+                }
+            });
+            
+            // Manejar el evento de recorte de pantalla en Windows (Win+Shift+S)
+            window.addEventListener('keydown', function(e) {
+                if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+                    if (pasteModal.style.display === 'block') {
+                        setTimeout(() => {
+                            const images = pasteArea.getElementsByTagName('img');
+                            if (images.length > 0) {
+                                pasteArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }, 100);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
